@@ -1,0 +1,7 @@
+/config.php
+/storage/*
+!/storage/.gitignore
+!/storage/.htaccess
+.DS_Store
+.idea/
+.vscode/

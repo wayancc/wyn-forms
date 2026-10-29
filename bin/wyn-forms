@@ -1,0 +1,76 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+require dirname(__DIR__) . '/src/bootstrap.php';
+
+use WynForms\App;
+
+$args = array_slice($argv, 1);
+$command = array_shift($args) ?? 'help';
+$opts = [];
+foreach ($args as $arg) {
+    if (preg_match('/^--([a-z-]+)(?:=(.*))?$/', $arg, $m)) {
+        $opts[$m[1]] = $m[2] ?? true;
+    }
+}
+$green = fn (string $s) => "\033[32m{$s}\033[0m";
+$red = fn (string $s) => "\033[31m{$s}\033[0m";
+
+try {
+    $app = App::boot(WYN_ROOT);
+
+    switch ($command) {
+        case 'cleanup':
+            // Also runs automatically once a day after a submission; use this from cron if you prefer.
+            echo 'Deleted ' . $app->cleanup(force: true) . " old spam submissions\n";
+            break;
+
+        case 'forms':
+            foreach ($app->forms->all() as $f) {
+                printf("%-28s %-14s %5d submissions  %s\n", mb_strimwidth($f['name'], 0, 28, '…'), $f['key'], $f['submission_count'], $f['enabled'] ? '' : '(closed)');
+            }
+            break;
+
+        case 'user:password':
+            $user = isset($opts['email']) ? $app->db->one('SELECT id FROM wyn_users WHERE email = ?', [strtolower((string) $opts['email'])]) : null;
+            if ($user === null) {
+                throw new RuntimeException('Usage: bin/wyn-forms user:password --email=you@example.com (user must exist)');
+            }
+            echo 'New password: ';
+            system('stty -echo 2>/dev/null');
+            $password = trim((string) fgets(STDIN));
+            system('stty echo 2>/dev/null');
+            echo "\n";
+            if (strlen($password) < 10) {
+                throw new RuntimeException('Use at least 10 characters.');
+            }
+            $app->auth->changePassword((int) $user['id'], $password);
+            echo $green('Password changed') . "\n";
+            break;
+
+        case 'serve':
+            $port = (int) ($opts['port'] ?? 8000);
+            echo $green("Wyn Forms: http://127.0.0.1:{$port}/admin") . "  (Ctrl+C to stop)\n";
+            passthru(sprintf('PHP_CLI_SERVER_WORKERS=4 %s -S 127.0.0.1:%d -t %s %s', escapeshellarg(PHP_BINARY), $port,
+                escapeshellarg(WYN_ROOT . '/public'), escapeshellarg(WYN_ROOT . '/public/index.php')));
+            break;
+
+        default:
+            echo <<<TXT
+            Wyn Forms: self-hosted form backend
+
+            Usage: php bin/wyn-forms <command>
+
+              forms                        List forms and their endpoint keys
+              cleanup                      Delete spam older than the retention setting
+              user:password --email=…      Reset a user's password
+              serve [--port=8000]          Local dev server
+
+            TXT;
+    }
+} catch (Throwable $e) {
+    fwrite(STDERR, $red($e->getMessage()) . "\n");
+    exit(1);
+}

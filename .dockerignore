@@ -1,0 +1,6 @@
+.git
+.github
+storage/*.sqlite*
+storage/uploads
+config.php
+tests

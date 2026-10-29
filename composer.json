@@ -1,0 +1,21 @@
+{
+  "name": "wayancc/wyn-forms",
+  "description": "Self-hosted form backend: spam-filtered inbox, notifications and uploads for any HTML form. PHP 8.2 + SQLite, no dependencies.",
+  "type": "project",
+  "license": "AGPL-3.0-only",
+  "keywords": ["forms", "form-backend", "contact-form", "formspree-alternative", "static-site", "self-hosted", "sqlite", "spam-protection"],
+  "require": {
+    "php": ">=8.2",
+    "ext-curl": "*",
+    "ext-openssl": "*",
+    "ext-pdo_sqlite": "*"
+  },
+  "suggest": {
+    "ext-fileinfo": "Detects the real type of uploaded files"
+  },
+  "bin": ["bin/wyn-forms"],
+  "scripts": {
+    "test": "php tests/run.php",
+    "serve": "php bin/wyn-forms serve"
+  }
+}

@@ -1,0 +1,11 @@
+services:
+  wyn-forms:
+    build: .
+    ports:
+      - "8080:80"
+    volumes:
+      - wyn-forms-data:/var/www/wyn-forms/storage
+    restart: unless-stopped
+
+volumes:
+  wyn-forms-data:
